@@ -1,210 +1,133 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  Alert,
-} from 'react-native';
-import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { useFriends } from '@/hooks/useFriends';
-import { StatusButton } from '@/components/StatusButton';
-import { FriendCard } from '@/components/FriendCard';
-import { StatusIndicator } from '@/components/StatusIndicator';
-import { router } from 'expo-router';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Search, User } from 'lucide-react-native';
+import { LiquidGlass } from '@/components/LiquidGlass';
+import { COLORS } from '@/constants/theme';
 
-export default function HomeScreen() {
-  const { user } = useAuth();
-  const { profile, updateStatus } = useUserProfile(user?.id);
-  const { friends, loading: friendsLoading, refetch } = useFriends(user?.id);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const handleStatusChange = async () => {
-    if (!profile) return;
-
-    const newStatus = profile.status === 'available' ? 'unavailable' : 'available';
-    await updateStatus(newStatus);
-    
-    // Show feedback
-    Alert.alert(
-      newStatus === 'available' ? 'Tu es dispo ! 🎉' : 'Plus dispo 😴',
-      newStatus === 'available' 
-        ? 'Tes amis vont être notifiés !'
-        : 'Tes amis ne te verront plus disponible'
-    );
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  };
-
-  const availableFriends = friends.filter(f => f.status === 'available');
-  const unavailableFriends = friends.filter(f => f.status !== 'available');
-
+export default function ExploreScreen() {
   return (
-    <View style={styles.container}>
-      {/* Header with permanent status bar */}
-      <View style={[styles.statusBar, { backgroundColor: profile.status === 'available' ? '#10B981' : '#EF4444' }]}>
-        <View style={styles.statusBarContent}>
-          <StatusIndicator status={profile.status} size={16} />
-          <Text style={styles.statusBarText}>
-            {profile.status === 'available' ? 'Tu peux sortir !' : 'Pas disponible'}
-          </Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Swappit</Text>
+          <Text style={styles.subtitle}>Découvre des objets à troquer près de chez toi</Text>
         </View>
+        <Pressable style={styles.profileButton}>
+          <User size={18} color={COLORS.textPrimary} />
+        </Pressable>
       </View>
 
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>Salut {profile.username} ! 👋</Text>
-          <Text style={styles.welcomeSubtext}>
-            Change ton statut pour que tes amis sachent si tu peux sortir
-          </Text>
-        </View>
+      <View style={styles.searchRow}>
+        <LiquidGlass
+          borderRadius={16}
+          height={48}
+          backgroundColor="rgba(255,255,255,0.06)"
+          style={styles.searchGlass}
+          contentStyle={styles.searchContent}
+        >
+          <TextInput
+            placeholder="Rechercher un objet..."
+            placeholderTextColor={COLORS.textMuted}
+            style={styles.searchInput}
+          />
+        </LiquidGlass>
 
-        <StatusButton
-          status={profile.status}
-          onPress={handleStatusChange}
-        />
+        <Pressable style={styles.searchButton}>
+          <Search size={20} color={COLORS.textPrimary} strokeWidth={2.5} />
+        </Pressable>
+      </View>
 
-        {/* Available Friends */}
-        {availableFriends.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              🎉 Disponibles maintenant ({availableFriends.length})
-            </Text>
-            {availableFriends.map((friend) => (
-              <FriendCard
-                key={friend.id}
-                friend={friend}
-                onChatPress={() => router.push(`/(tabs)/chat`)}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* All Friends Group Status */}
-        {availableFriends.length > 1 && (
-          <View style={styles.groupAlert}>
-            <Text style={styles.groupAlertText}>
-              🔥 Toute la team est dispo ! C'est le moment de sortir !
-            </Text>
-          </View>
-        )}
-
-        {/* Unavailable Friends */}
-        {unavailableFriends.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              😴 Pas disponibles ({unavailableFriends.length})
-            </Text>
-            {unavailableFriends.map((friend) => (
-              <FriendCard
-                key={friend.id}
-                friend={friend}
-                onChatPress={() => router.push(`/(tabs)/chat`)}
-              />
-            ))}
-          </View>
-        )}
-
-        {friends.length === 0 && !friendsLoading && (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>Aucun ami pour le moment 😢</Text>
-            <Text style={styles.emptyStateText}>
-              Va dans l'onglet "Amis" pour en ajouter !
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-    </View>
+      <View style={styles.emptyState}>
+        <LiquidGlass
+          width={88}
+          height={88}
+          borderRadius={22}
+          backgroundColor="rgba(255,255,255,0.05)"
+        >
+          <Search size={30} color={COLORS.textMuted} strokeWidth={2} />
+        </LiquidGlass>
+        <Text style={styles.emptyTitle}>Aucun résultat</Text>
+        <Text style={styles.emptySubtitle}>Essaie avec d'autres mots-clés ou catégories.</Text>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.background,
   },
-  statusBar: {
-    paddingTop: 50,
-    paddingBottom: 12,
-    paddingHorizontal: 20,
-  },
-  statusBarContent: {
+  header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    maxWidth: 260,
+  },
+  profileButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  statusBarText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  content: {
-    flex: 1,
-  },
-  welcomeSection: {
-    padding: 20,
+  searchRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  welcomeSubtext: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  section: {
+    gap: 12,
+    paddingHorizontal: 20,
     marginTop: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginHorizontal: 20,
-    marginBottom: 12,
+  searchGlass: {
+    flex: 1,
   },
-  groupAlert: {
-    backgroundColor: '#F59E0B',
-    marginHorizontal: 20,
-    marginVertical: 16,
-    padding: 16,
+  searchContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  searchInput: {
+    flex: 1,
+    color: COLORS.textPrimary,
+    fontSize: 15,
+  },
+  searchButton: {
+    width: 48,
+    height: 48,
     borderRadius: 16,
     alignItems: 'center',
-  },
-  groupAlertText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.accent,
   },
   emptyState: {
+    flex: 1,
     alignItems: 'center',
-    padding: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+    gap: 12,
+    marginBottom: 80,
   },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginBottom: 8,
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
   },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#9CA3AF',
+  emptySubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
 });

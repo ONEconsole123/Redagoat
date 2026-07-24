@@ -7,12 +7,16 @@ interface LiquidGlassProps {
   width?: DimensionValue;
   height?: DimensionValue;
   borderRadius?: number;
+  backgroundColor?: string;
+  tint?: 'light' | 'dark';
+  intensity?: number;
   style?: StyleProp<ViewStyle>;
+  contentStyle?: StyleProp<ViewStyle>;
 }
 
 // Only valid on web — react-native-web forwards unrecognized style keys
 // straight through to the DOM node's inline style.
-const webBackgroundStyle =
+const webFilterStyle =
   Platform.OS === 'web'
     ? ({
         filter: `url(#glass-distortion)`,
@@ -25,21 +29,28 @@ export function LiquidGlass({
   width,
   height,
   borderRadius = 28,
+  backgroundColor = 'rgba(255,255,255,0.06)',
+  tint = 'dark',
+  intensity = 40,
   style,
+  contentStyle,
 }: LiquidGlassProps) {
   return (
     <View style={[styles.shadowWrap, { borderRadius, width, height }, style]}>
       <View style={[styles.clip, { borderRadius }]}>
+        {/* Teinte de base : garantit un aspect "verre" même si le blur/filtre n'est pas supporté */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor }]} />
+
         {Platform.OS === 'web' ? (
-          <View style={[StyleSheet.absoluteFill, webBackgroundStyle]} />
+          <View style={[StyleSheet.absoluteFill, webFilterStyle]} />
         ) : (
-          <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={intensity} tint={tint} style={StyleSheet.absoluteFill} />
         )}
 
         {/* Reflet lumineux interne */}
         <View style={[StyleSheet.absoluteFill, styles.highlight, { borderRadius }]} pointerEvents="none" />
 
-        <View style={styles.content}>{children}</View>
+        <View style={[styles.content, contentStyle]}>{children}</View>
       </View>
     </View>
   );
@@ -54,15 +65,18 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   clip: {
+    flex: 1,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   highlight: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(255,255,255,0.16)',
   },
   content: {
-    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
